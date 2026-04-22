@@ -1,12 +1,9 @@
 package com.example.playwright;
 
 import com.microsoft.playwright.*;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import com.microsoft.playwright.options.AriaRole;
+import org.junit.jupiter.api.*;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
@@ -16,25 +13,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class PlaywrightTests {
     String externalUrl = "https://www.kimmoahola.net/playwright.html";
 
-    Playwright playwright;
-    Browser browser;
+    static Playwright playwright;
+    static Browser browser;
     BrowserContext browserContext;
     Page page;
 
-    @BeforeEach
-    void setUp() {
+    @BeforeAll
+    static void launchBrowser() {
         playwright = Playwright.create();
-
-        boolean headLess = System.getenv("HEADLESS") != null; // toggle headless in CI environment
-
+        boolean headLess = System.getenv("HEADLESS") != null;
         browser = playwright.chromium().launch(
                 new BrowserType.LaunchOptions()
                         .setHeadless(headLess)
-                        .setSlowMo(headLess ? 0 : 2000) // 2 second delay so you can view it locally
+                        .setSlowMo(headLess ? 0 : 2000)
                         .setArgs(List.of("--start-maximized"))
-
         );
+    }
 
+    @BeforeEach
+    void setUp() {
         browserContext = browser.newContext(
                 new Browser.NewContextOptions()
                         .setViewportSize(null)
@@ -45,6 +42,11 @@ public class PlaywrightTests {
 
     @AfterEach
     void tearDown() {
+        browserContext.close();
+    }
+
+    @AfterAll
+    static void closeBrowser() {
         browser.close();
         playwright.close();
     }
@@ -53,6 +55,7 @@ public class PlaywrightTests {
     @Test
     void shouldReadPageTitleHeading() {
         Locator heading = page.locator("#page-title");
+        page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("My Page Title"));
         System.out.println("Heading text: " + heading.textContent());
         assertThat(heading).hasText("Playwright Test Page");
     }
@@ -131,6 +134,34 @@ public class PlaywrightTests {
         System.out.println("Nested span: " + span.textContent());
         assertThat(span).hasText("Nested Text");
     }
+
+    // 11. Testing a "flow" by going to github and searches for a user
+//    @Test
+//    void goToGitHubAndSearchForAUser() {
+//        page.navigate("https://github.com");
+//
+//        page.getByRole(AriaRole.BUTTON,
+//                new Page.GetByRoleOptions().setName("Search or jump to…")).first().click();
+//
+//        Locator searchInput = page.locator("#query-builder-test");
+//        searchInput.fill("user:Kimmo-Ahola");
+//        searchInput.press("Enter");
+//
+//        page.getByRole(AriaRole.LINK,
+//                new Page.GetByRoleOptions().setName("Repositories")).click();
+//
+//        Locator searchRepoInput = page.locator("#your-repos-filter");
+//        searchRepoInput.fill("JAVA25S_MAW_AWS_Playwright_Demo");
+//        searchRepoInput.press("Enter");
+//
+//
+//        Locator repoResult = page.getByRole(AriaRole.LINK,
+//                new Page.GetByRoleOptions().setName("JAVA25S_MAW_AWS_Playwright_Demo")).first();
+//        assertThat(repoResult).isVisible();
+//
+//        repoResult.click();
+//        assertThat(page).hasURL("https://github.com/Kimmo-Ahola/JAVA25S_MAW_AWS_Playwright_Demo");
+//    }
 
     @Test
     @Tag("smoke")
